@@ -41,7 +41,7 @@ class Shortcut:
         self.scrollSpeed = 5
         
         self.isSlow = True
-        self.speedFast = 100
+        self.speedFast = 70
         self.speedSlow = 15
         self.speed = self.speedSlow
 
@@ -142,7 +142,6 @@ class Shortcut:
                 print("custom mode")
         except:
             print("change mod failed")
-            keyboard.wait()
             
     
     #마우스<->방향키 변경
@@ -218,15 +217,10 @@ class Shortcut:
                     #     keyboard.press(arrow)
                     # elif(pos=='up'):
                     #     keyboard.release(arrow)
+
                     keyboard.press(arrow)
-                    if(self.isSlow==False):
-                        
-                        for each in range(self.arrowSize):
-                            keyboard.press(arrow)
-                            print(arrow)
+                    print(arrow)
                     return
-
-
             else:
                     keyboard.press(key)
                     return
@@ -238,26 +232,20 @@ class Shortcut:
 
 #마우스ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
     def toggleSpeed(self,speed):
-        try:
-            if(self.mode_flag==False):
-                keyboard.press(speed)
-                return;
+        if(self.mode_flag==False):
+            keyboard.press(speed)
+            return;
+        else:
+            if(speed=='fast'):
+                self.speed = self.speedFast
+                return
+            elif(speed=='slow'):
+                self.speed = self.speedSlow
+                return
             else:
-                if(speed=='fast'):
-                    self.isSlow = False
-                    self.speed = self.speedFast
-                    return
-                elif(speed=='slow'):
-                    self.isSlow = True
-                    self.speed = self.speedSlow
-                    return
-                else:
-                    self.speed = self.speedSlow
-                    return
-        except:
-            print("speed toggle failed")
-            keyboard.wait()
-            return    
+                self.speed = self.speedSlow
+                return
+        
 
 
         # if(self.isSlow==False):
