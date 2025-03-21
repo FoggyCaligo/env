@@ -1,6 +1,6 @@
 import keyboard
 import mouse
-
+import os
 # import pynput
 from pynput.mouse import Button, Controller
 
@@ -142,7 +142,10 @@ class Shortcut:
                 print("custom mode")
         except:
             print("change mod failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
+
             
     
     #마우스<->방향키 변경
@@ -162,6 +165,8 @@ class Shortcut:
                 keyboard.press(key)        
         except:
             print("change mouse failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
             
         
@@ -232,6 +237,8 @@ class Shortcut:
                     return
         except:
             print("Arrow input failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
             return
 
@@ -256,9 +263,10 @@ class Shortcut:
                     return
         except:
             print("speed toggle failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
             return    
-
 
         # if(self.isSlow==False):
         #     self.scrollSpeed = self.scrollSpeedFast
@@ -290,6 +298,8 @@ class Shortcut:
                 keyboard.press(key)
         except:
             print("Mouse input failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
             return
     #좌수 떼기
@@ -311,6 +321,8 @@ class Shortcut:
                 # keyboard.press(key)
         except:
             print("Mouse input failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
             return
         
@@ -329,6 +341,8 @@ class Shortcut:
                 keyboard.press(key)
         except:
             print("Mouse input failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
             return    
 
@@ -361,6 +375,8 @@ class Shortcut:
                 return
         except:
             print("Mouse input failed")
+            shortcut.__del__()
+            shortcut = Shortcut()
             keyboard.wait()
                 
 
