@@ -1,10 +1,7 @@
 import keyboard
 import mouse
-import os
-# import pynput
-from pynput.mouse import Button, Controller
-
-# from pynput.mouse import Button, Controller
+import pynput
+import string
 
 import pyautogui
 
@@ -25,111 +22,299 @@ hjkl -> vim format 방향키
 
 class Shortcut:
     def __init__(self):
+
+        
+
+
         # keyboard.unhook_all_hotkeys()
 
-        self.mode_flag = False
+        self.mode_flag = False 
         self.isMouse = False
 
-        self.mouse = Controller()
+        # self.mouse = Controller()
+        self.mouse = pynput.mouse.Controller()
         self.shift = False
         self.alt = False
         self.ctrl = False
 
-        # self.x = mouse.get_position()[0]
-        # self.y = mouse.get_position()[1]
-        # self.y = 10
-        self.scrollSpeed = 5
+        self.scrollSpeed = 5 
         
         self.isSlow = True
         self.speedFast = 100
         self.speedSlow = 15
         self.speed = self.speedSlow
 
+        self.keyboard_ctrl = pynput.keyboard.Controller()
         
-        #키
+        
+        #조합키 상태
+        self.shift = False
+        self.alt = False
+        self.ctrl = False
+        self.space = False
+
+        #입력키
+        self.etc = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFJHIJKLMNOPQRSTUVWXYZ01234567890'        
+        #모든 키
+        self.cmds = 'hjkl ui w asdf HJKL'
+        #방향키
+        self.left = self.cmds[0]
+        self.down = self.cmds[1] 
+        self.up = self.cmds[2]
+        self.right = self.cmds[3]
+        #방향키 블록지정
+        self.shiftleft = self.cmds[15]
+        self.shiftdown = self.cmds[16]
+        self.shiftup = self.cmds[17]
+        self.shiftright = self.cmds[18]
+        #페이지 업다운 
+        self.pgDn = self.cmds[5]
+        self.pgUp = self.cmds[6] 
+        #가속
+        self.mouseSlow = self.cmds[8]
         self.arrowSize = 5
-        keyOrderArrow = "hjkl"
-        self.left = keyOrderArrow[0]
-        self.down =   keyOrderArrow[1]
-        self.up = keyOrderArrow[2]
-        self.right = keyOrderArrow[3]
-        keyOrderPg = "ui"
-        self.pgUp = keyOrderPg[0]
-        self.pgDn = keyOrderPg[1]
-        keyOrderMouse = "asdf"
-        self.mouseChange = keyOrderMouse[0]
-        self.mouseMiddle = keyOrderMouse[1]
-        self.mouseRight = keyOrderMouse[2]
-        self.mouseLeft = keyOrderMouse[3]
-        
-        self.mouseSlow = 'w'
+        #마우스변경
+        self.mouseChange = self.cmds[10]
+        #마우스버튼
+        self.mouseMiddle = self.cmds[11]
+        self.mouseRight = self.cmds[12]
+        self.mouseLeft = self.cmds[13]
+        #마우스스크롤
 
 
 
-        # keyboard.press('space')
+        #키 입력 감지
         #모드 변경    
-        keyboard.add_hotkey('shift+space', lambda: self.changeMode(), suppress=True)
+        # keyboard.add_hotkey('shift+space', lambda: self.changeMode(), suppress=True)
+        #키 다운
+        keyboard.on_press(self.alter_keys_press, suppress=True) 
+        #키 업
+        keyboard.on_release(self.alter_keys_release,suppress=True)
 
-        #shift
-        keyboard.on_press_key('shift', lambda _: True if self.shift==False else False)
-        keyboard.on_release_key('shift', lambda _: True if self.shift==False else False)
-        #alt
-        keyboard.on_press_key('alt', lambda _: True if self.shift==False else False)
-        keyboard.on_release_key('alt', lambda _: True if self.shift==False else False)
-        #ctrl
-        keyboard.on_press_key('ctrl', lambda _: True if self.shift==False else False)
-        keyboard.on_release_key('ctrl', lambda _: True if self.shift==False else False)
+  
+
+
+    
+    #키 프레스
+    def alter_keys_press(self,key):
+        key = str(key).replace('KeyboardEvent(','').replace(' down)','')
+        print(key)
+        #조합키 입력 시
+        if(key=='shift' or key=='right shift'):
+            if(self.shift==False):
+                keyboard.press('shift')
+                keyboard.press('right shift')
+                self.shift = True
+              
+        elif(key=='space'):
+            if(self.shift==True):
+                self.mode_flag = True if self.mode_flag==False else False
+                print('mode ',self.mode_flag)
+                return
+            else: 
+                keyboard.press('space')
+                
+        elif(key=='ctrl' or key=='right ctrl'):
+            self.ctrl = True
+            keyboard.press('ctrl')       
+        elif(key=='alt'): 
+            self.alt = True
+            keyboard.press('alt')
+ 
+        #모드 아니면 해당 키 입력 후 종료
+        if(self.mode_flag == False):
+            if(key in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+                cmd = 'shift'+'+'+key.lower() 
+                print(cmd)
+                keyboard.press(cmd)
+            else:
+                keyboard.press(key)
+
+            return
+
+        #모드 중인데 단축키 입력 시
+        if(self.ctrl==True):
+            if(key in "sewcvxzyga"):
+                keyboard.press('ctrl+'+key)
+                return
+
+        #모드 중인데 매핑안된 키 입력 시
+        if(key not in self.cmds and key in self.etc):
+            # self.mode_flag = False
+            # self.isMouse = False
+            # print('mode ',self.mode_flag)
+            print('key not mapped')
+            return   
+        if(key not in self.cmds):
+            keyboard.press(key)
+                        
+
+
+
+        
+        
+        
+        #가속 여부 : 가속
+        if(key==self.mouseSlow):
+            self.isSlow = False
+            self.speed = self.speedFast
+            return 
+    
+        #마우스<->방향키 입력 시
+        if(key == self.mouseChange):
+            self.isMouse = True if self.isMouse==False else False
+            return
+        #페이지 업다운 입력 시
+        if(key==self.pgUp):
+            keyboard.press('pgUp')
+            return
+        if(key==self.pgDn):
+            keyboard.press('pgDown')
+            return
+        #마우스 버튼
+        if(key==self.mouseLeft):
+            self.mouse.press(pynput.mouse.Button.left)
+        elif(key==self.mouseRight):
+            self.mouse.press(pynput.mouse.Button.right)
+        elif(key==self.mouseMiddle):
+            self.mouse.press(pynput.mouse.Button.middle)
+        #마우스 모드일때
+        if(self.isMouse==True):
+            #움직임
+            if(key == self.left):
+                speed = self.speedSlow
+                if(self.isSlow==False):
+                    speed = self.speedFast
+                self.x = mouse.get_position()[0]-speed
+                self.y = mouse.get_position()[1]
+                mouse.move(self.x,self.y, 0.5)
+            elif(key==self.up):
+                speed = self.speedSlow
+                if(self.isSlow==False):
+                    speed = self.speedFast
+                self.x = mouse.get_position()[0]
+                self.y = mouse.get_position()[1]-speed
+                mouse.move(self.x,self.y, 0.5)
+            elif(key==self.down):
+                
+                speed = self.speedSlow
+                if(self.isSlow==False):
+                    speed = self.speedFast
+                self.x = mouse.get_position()[0]
+                self.y = mouse.get_position()[1]+speed
+                mouse.move(self.x,self.y, 0.5)
+            elif(key==self.right):
+                speed = self.speedSlow
+                if(self.isSlow==False):
+                    speed = self.speedFast
+                self.x = mouse.get_position()[0]+speed
+                self.y = mouse.get_position()[1]
+                mouse.move(self.x,self.y, 0.5)
+            #언맵드
+        #방향키 모드일때 
+        elif(self.isMouse==False):
+            if(key == self.left):
+                keyboard.press('left')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('left') 
+                        print('left')
+            elif(key==self.up):
+                keyboard.press('up')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('up') 
+                        print('up')
+            elif(key==self.down):
+                keyboard.press('down')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('down') 
+                        print('down')
+            elif(key==self.right):
+                keyboard.press('right')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('right') 
+                        print('right')
+            #$블록지정
+            elif(key==self.shiftleft):
+                keyboard.press('shift+left')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('shift+left') 
+                        print('shiftleft')
+                print('shiftleft')
+            elif(key==self.shiftright):
+                # keyboard.press('shift')
+                keyboard.press('shift+right')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('shift+right') 
+                        print('shifright')
+                print('shiftright')
+            elif(key==self.shiftup):
+                keyboard.press('shift+up')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('shift+up') 
+                        print('shiftup')
+                print('shiftup')
+            elif(key==self.shiftdown):
+                keyboard.press('shift+down')
+                # keyboard.press('down')
+                if(self.isSlow==False):
+                    for each in range(self.arrowSize):
+                        keyboard.press('shift+down') 
+                        print('shiftdown')
+                print('shiftdown')
         
 
-        #방향키&마우스 모드
-        # self.main()
-
-        # #방향키 입력
-        # keyboard.add_hotkey(self.left,lambda:  self.arrowAlter(arrow='left', key=self.left), suppress=True)
-        # keyboard.add_hotkey(self.down,lambda:  self.arrowAlter(arrow='down',key=self.down), suppress=True)
-        # keyboard.add_hotkey(self.up,lambda:  self.arrowAlter(arrow='up',key=self.up), suppress=True)
-        # keyboard.add_hotkey(self.right,lambda:  self.arrowAlter(arrow='right',key=self.right), suppress=True)
-        
-        keyboard.on_press_key(self.left,lambda e:  self.arrowAlter(arrow='left', key=self.left), suppress=True)
-        keyboard.on_press_key(self.down,lambda e:  self.arrowAlter(arrow='down',key=self.down), suppress=True)
-        keyboard.on_press_key(self.up,lambda e:  self.arrowAlter(arrow='up',key=self.up), suppress=True)
-        keyboard.on_press_key(self.right,lambda e:  self.arrowAlter(arrow='right',key=self.right), suppress=True)
-         
-         
-        #페이지 스크클
-        keyboard.add_hotkey(self.pgUp,lambda:  self.mouseScroll(mouse='pgUp',key=self.pgUp), suppress=True)
-        keyboard.add_hotkey(self.pgDn,lambda:  self.mouseScroll(mouse='pgDown',key=self.pgDn), suppress=True)
-        #마우스<->방향키 변경
-        keyboard.add_hotkey(self.mouseChange,lambda: self.changeMouse(self.mouseChange), suppress=True)
-        #마우스 속도 조절
-        keyboard.on_press_key(self.mouseSlow, lambda e:  self.toggleSpeed('fast'), suppress=True)
-        keyboard.on_release_key(self.mouseSlow, lambda e: self.toggleSpeed('slow'), suppress=True);
-        #마우스 누르기
-        keyboard.on_press_key(self.mouseLeft, lambda e: self.mousePress(mouse='left', key=self.mouseLeft), suppress=True)
-        keyboard.on_press_key(self.mouseRight, lambda e:  self.mousePress(mouse='right', key=self.mouseRight), suppress=True)
-        keyboard.on_press_key(self.mouseMiddle, lambda e: self.mousePress(mouse='middle', key=self.mouseMiddle), suppress=True)
-        #마우스 떼기
-        keyboard.on_release_key(self.mouseLeft, lambda e:  self.mouseRelease(mouse='left', key=self.mouseLeft), suppress=True)
-        keyboard.on_release_key(self.mouseRight, lambda e: self.mouseRelease(mouse='right', key=self.mouseRight), suppress=True)
-        keyboard.on_release_key(self.mouseMiddle, lambda e: self.mouseRelease(mouse='middle', key=self.mouseMiddle), suppress=True)
 
 
 
 
+    #키 릴리즈
+    def alter_keys_release(self,key):
+        key = str(key).replace('KeyboardEvent(','').replace(' up)','')
+        # print(key)s
+        #조합키
+        if(key=='space'): 
+            keyboard.release('space')
+        if(key=='shift' or key=='right shift'):
+            keyboard.release('shift')
+            keyboard.release('right shift')
+            self.shift = False
+        if(key=='ctrl' or key=='right ctrl'):
+            keyboard.release('ctrl')
+            self.ctrl = False
+        if(key=='alt'):
+            keyboard.release('alt')
+            self.alt = False
+        #모드 아니면 해당 키 릴리즈 후 종료
+        if(self.mode_flag == False):
+            keyboard.release(key) 
+            return
+        #가속 여부 : 감속
+        if(key==self.mouseSlow):
+            self.isSlow = True
+            self.speed = self.speedSlow
+            return
+        #마우스 버튼
+        if(self.isMouse):
+            if(key==self.mouseLeft):
+                self.mouse.release(pynput.mouse.Button.left)
+            elif(key==self.mouseRight):
+                self.mouse.release(pynput.mouse.Button.right)
+            elif(key==self.mouseMiddle):
+                self.mouse.release(pynput.mouse.Button.middle)
+        #매핑된 키면
+        elif(key in self.cmds):
+            keyboard.release(key)
 
 
-        # keyboard.on_press_key('shift', lambda _: True if self.shift==False else False)
-        
 
-        # keyboard.KEY_DOWN('h',lambda:  self.pressKey('shift'), suppress=True)
-
-        
-        # # keyboard.add_hotkey('shift+H',lambda:  self.arrowAlter('shift+left'), suppress=True)
-        # # keyboard.add_hotkey('shift+J',lambda:  self.arrowAlter('shift+up'), suppress=True)
-        # # keyboard.add_hotkey('shift+k',lambda:  self.arrowAlter('shift+down'), suppress=True)
-        # # keyboard.add_hotkey('shift+l',lambda:  self.arrowAlter('shift+right'), suppress=True)
-        
-    #모드 변경 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ   
+    #모드 변경 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ   s
     def changeMode(self):
         try:
             if(self.mode_flag==True):
@@ -138,261 +323,22 @@ class Shortcut:
                 print("keyboard mode ")
             else:
                 self.mode_flag=True
-                # self.isMouse = False
+                self.isMouse = False
                 print("custom mode")
         except:
             print("change mod failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
+            # shortcut.__del__()
+            # shortcut = Shortcut()
             keyboard.wait()
 
-            
+       
     
-    #마우스<->방향키 변경
-    def changeMouse(self,key):
-        try:
-            if(self.mode_flag==True):
-                # afdsfdsaself.isMouse = not self.isMouse
-                
-                
-                if(self.isMouse==True):
-                    self.isMouse=False
-                    print("changed 2 arrow")
-                elif(self.isMouse==False):
-                    self.isMouse=True
-                    print("changed 2 mouse")    
-            else:
-                keyboard.press(key)        
-        except:
-            print("change mouse failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
-            keyboard.wait()
-            
-        
-#방향키ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-    #방향키 입력
-    def arrowAlter(self,arrow,key):
-        try:
-            if(self.mode_flag==True): 
-                if(self.isMouse==True):
-                    # mouse.move (mougghsex,mousey)
-                    if(arrow=='up'):
-                        # mouse.move(0,self.speed,0.5)
-                        self.x = mouse.get_position()[0]
-                        self.y = mouse.get_position()[1]-self.speed
-                        mouse.move(self.x,self.y, 0.5)
-                        # self.mouse.move(0,self.speed,0.5)
-                        return
-                    elif(arrow=='down'):
-                        self.x = mouse.get_position()[0]
-                        self.y = mouse.get_position()[1]+self.speed
-                        mouse.move(self.x,self.y, 0.5)
-                        # self.mouse.move(0,-self.speed,0.5)
-                        # mouse.move(0,-self.speed,0.5)
-                        # mouse.move(self.x,self.y+self.speed, 0.5)
-                        return
-                    elif(arrow=='left'):
-                        # mouse.move(-self.speed,0,0.5)
-                        self.x = mouse.get_position()[0]-self.speed
-                        self.y = mouse.get_position()[1]
-                        mouse.move(self.x,self.y, 0.5)
-                        # self.mouse.move(-self.speed,0,0.5)
-                        # mouse.move(self.x-self.speed,self.y, 0.5)
-                        return
-                    elif(arrow=='right'):
-                        # mouse.move(self.speed,0,0.5)
-                        self.x = mouse.get_position()[0]+self.speed
-                        self.y = mouse.get_position()[1]
-                        mouse.move(self.x,self.y, 0.5)
-                        # self.mouse.move(self.speed,0,0.5)
-                        # mouse.move(self.x+self.speed,self.y, 0.5)
-                        return
-                    elif(key=='pgUp'):
-                        keyboard.press('pgUp')
-                        return
-                    elif(key=='pgDown'):
-                        keyboard.press('pgDown')
-                        return
-                    else:
-                        print("unexpected input : ",key,arrow,self.isMouse)
-                        return;
-                    
-                else:
-                    # if(pos=='down'):
-                    #     keyboard.press(arrow)
-                    # elif(pos=='up'):
-                    #     keyboard.release(arrow)
-                    keyboard.press(arrow)
-                    if(self.isSlow==False):
-                        
-                        for each in range(self.arrowSize):
-                            keyboard.press(arrow)
-                            print(arrow)
-                    return
-
-
-            else:
-                    keyboard.press(key)
-                    return
-        except:
-            print("Arrow input failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
-            keyboard.wait()
-            return
-
-
-#마우스ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-    def toggleSpeed(self,speed):
-        try:
-            if(self.mode_flag==False):
-                keyboard.press(speed)
-                return;
-            else:
-                if(speed=='fast'):
-                    self.isSlow = False
-                    self.speed = self.speedFast
-                    return
-                elif(speed=='slow'):
-                    self.isSlow = True
-                    self.speed = self.speedSlow
-                    return
-                else:
-                    self.speed = self.speedSlow
-                    return
-        except:
-            print("speed toggle failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
-            keyboard.wait()
-            return    
-
-        # if(self.isSlow==False):
-        #     self.scrollSpeed = self.scrollSpeedFast
-        #     self.isSlow = True
-        #     print("slow mode")
-        # else:
-        #     self.scrollSpeed = self.scrollSpeedSlow
-        #     self.isSlow = False
-        #     print("fast mode")
-        # return
-    
-        
-    #좌수 입력
-    def mousePress(self,mouse,key):
-        try:
-            if(self.mode_flag==True):
-                if(mouse=='left'):
-                    self.mouse.press(Button.left)
-                    return
-                elif(mouse=='right'):
-                    self.mouse.press(Button.right)
-                    return
-                elif(mouse=='middle'):
-                    self.mouse.press(Button.middle)
-                    return
-                else:
-                    print("unexpected input : ",key,self.isMouse)
-            else:
-                keyboard.press(key)
-        except:
-            print("Mouse input failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
-            keyboard.wait()
-            return
-    #좌수 떼기
-    def mouseRelease(self,mouse,key):
-        try:
-            if(self.mode_flag==True):
-                if(mouse=='left'):
-                    self.mouse.release(Button.left)
-                    return
-                elif(mouse=='right'):
-                    self.mouse.release(Button.right)
-                    return
-                elif(mouse=='middle'):
-                    self.mouse.release(Button.middle)
-                    return
-                else:
-                    print("unexpected input : ",key,self.isMouse)
-            # else:
-                # keyboard.press(key)
-        except:
-            print("Mouse input failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
-            keyboard.wait()
-            return
-        
-    def mouseScroll(self,mouse,key):
-        try:
-            if(self.mode_flag==True):
-                if(mouse=='pgUp'):
-                    self.mouse.scroll(0,self.scrollSpeed)
-                    return
-                elif(mouse=='pgDown'):
-                    self.mouse.scroll(0,-self.scrollSpeed)
-                    return
-                else:
-                    print("unexpected input : ",key,self.isMouse)
-            else:
-                keyboard.press(key)
-        except:
-            print("Mouse input failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
-            keyboard.wait()
-            return    
-
-
-
-    def mouseAlter(self,mouse,key):
-        try:
-            if(self.mode_flag==True):
-                # mouse.click(mouse)
-                if(mouse=='left'):
-                    # mouse.click(button='left')
-                    self.mouse.click(Button.left)
-                    return
-                elif(mouse=='right'):
-                    mouse.click(button='right')
-                    return
-                elif(mouse=='middle'):
-                    mouse.click(button='middle')
-                    return
-                elif(mouse=='pgUp'):
-                    mouse.scroll(0,10)
-                    return
-                elif(mouse=='pgDown'):
-                    mouse.scroll(0,-10)
-                else:
-                    print("unexpected input : ",key,mouse,self.isMouse)
-                    return
-            else:
-                keyboard.press(key)
-                return
-        except:
-            print("Mouse input failed")
-            shortcut.__del__()
-            shortcut = Shortcut()
-            keyboard.wait()
-                
-
-
-
-
-
-
-
-
-                
     def __del__(self):
-        # keyboard.unhook_all()
+        keyboard.unhook_all()
         keyboard.unhook_all_hotkeys()
-        keyboard.unhook_all_word_listeners()
+        # keyboard.unhook_all_word_listeners()
         mouse.unhook_all()
+        
 
         return
 
