@@ -4,6 +4,7 @@ import pynput
 import string
 
 import pyautogui
+import os
 
 '''
 alt space -> mode change
@@ -21,9 +22,26 @@ hjkl -> vim format 방향키
 class Shortcut:
     def __init__(self):
 
+        
+        self.eng_to_jamo = {
+            'r': 'ㄱ', 'R': 'ㄲ', 's': 'ㄴ', 'e': 'ㄷ', 'E': 'ㄸ', 'f': 'ㄹ',
+            'a': 'ㅁ', 'q': 'ㅂ', 'Q': 'ㅃ', 't': 'ㅅ', 'T': 'ㅆ', 'd': 'ㅇ',
+            'w': 'ㅈ', 'W': 'ㅉ', 'c': 'ㅊ', 'z': 'ㅋ', 'x': 'ㅌ', 'v': 'ㅍ', 'g': 'ㅎ',
+            'k': 'ㅏ', 'o': 'ㅐ', 'i': 'ㅑ', 'O': 'ㅒ', 'j': 'ㅓ', 'p': 'ㅔ',
+            'u': 'ㅕ', 'P': 'ㅖ', 'h': 'ㅗ', 'y': 'ㅛ', 'n': 'ㅜ', 'b': 'ㅠ',
+            'm': 'ㅡ', 'l': 'ㅣ'
+        }
+        self.buffer = []
+
+        self.hangul = False
+
+
+        # keyboard.unhook_all_hotkeys()
+
         self.mode_flag = False 
         self.isMouse = False
 
+        # self.mouse = Controller()
         self.mouse = pynput.mouse.Controller()
         self.shift = False
         self.alt = False
@@ -32,7 +50,7 @@ class Shortcut:
         self.scrollSpeed = 5 
         
         self.isSlow = True
-        self.speedFast = 100
+        self.speedFast = 70
         self.speedSlow = 15
         self.speed = self.speedSlow
 
@@ -41,14 +59,13 @@ class Shortcut:
         
         #조합키 상태
         self.shift = False
-        self.alt = False
+        self.alt = False  
         self.ctrl = False
-        self.space = False
 
         #입력키
         self.etc = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFJHIJKLMNOPQRSTUVWXYZ01234567890'        
         #모든 키
-        self.cmds = 'jkil uo w asdf JKIL'
+        self.cmds = 'jkil ou w asdf JKIL'
         #방향키
         self.left = self.cmds[0]
         self.down = self.cmds[1] 
@@ -83,22 +100,30 @@ class Shortcut:
         #키 업
         keyboard.on_release(self.alter_keys_release,suppress=True)
 
+        print('hangul',self.hangul, ' mouse',self.isMouse, ' mode',self.mode_flag)
 
+    def change_mod(self,flag):
+        self.mode_flag = flag
+        self.isMouse = False
+        self.hangul = False
 
+        self.shift = False
+        self.ctrl = False
+        self.alt = False
     
     #키 프레스
     def alter_keys_press(self,key):
         key = str(key).replace('KeyboardEvent(','').replace(' down)','')
-        print(key)
         #조합키 입력 시
         if(key=='shift' or key=='right shift'):
             if(self.shift==False):
                 keyboard.press('shift')
-                keyboard.press('right shift')
                 self.shift = True
         elif(key=='space'):
             if(self.shift==True):
-                self.mode_flag = True if self.mode_flag==False else False
+                # self.change_mod( True if self.mode_flag==False else False )
+                self.changeMode()
+                # self.mode_flag = 
                 print('mode ',self.mode_flag)
                 return
             else: 
@@ -106,37 +131,51 @@ class Shortcut:
                 
         elif(key=='ctrl' or key=='right ctrl'):
             self.ctrl = True
-            keyboard.press('ctrl')       
+            keyboard.press('ctrl')
+        elif(key=='right alt'):
+            self.hangul = (True if self.hangul==False else False)
         elif(key=='alt'): 
             self.alt = True
             keyboard.press('alt')
+
  
         #모드 아니면 해당 키 입력 후 종료
         if(self.mode_flag == False):
+            #대문자 
             if(key in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
                 cmd = 'shift'+'+'+key.lower() 
                 print(cmd)
                 keyboard.press(cmd)
+            #그 외
             else:
                 keyboard.press(key)
+            print(key)
+        #강제 종료 : shift tab
+        if self.shift==True and key=='tab':
+            keyboard.release('shift')
+            keyboard.release('ctrl')
+            keyboard.release('alt')
+            
+            self.__init__()
+            # change_mod(False)
 
-            return
+            # self.__del__()
+            # os._exit(0) 
+
+
 
         #모드 중인데 단축키 입력 시
         if(self.ctrl==True):
-            if(key in "sewcvxzyga"):
+            if(key in "sewcvxzygam/"):
                 keyboard.press('ctrl+'+key)
                 return
 
         #모드 중인데 매핑안된 키 입력 시
         if(key not in self.cmds and key in self.etc):
-            # self.mode_flag = False
-            # self.isMouse = False
-            # print('mode ',self.mode_flag)
-            print('key not mapped')
-            return   
+            print('key not mapped')  
         if(key not in self.cmds):
             keyboard.press(key)
+            return
                         
 
 
@@ -148,7 +187,6 @@ class Shortcut:
         if(key==self.mouseSlow):
             self.isSlow = False
             self.speed = self.speedFast
-            return 
     
         #마우스<->방향키 입력 시
         if(key == self.mouseChange):
@@ -209,60 +247,101 @@ class Shortcut:
                     for each in range(self.arrowSize):
                         keyboard.press('left') 
                         print('left')
+                
             elif(key==self.up):
                 keyboard.press('up')
                 if(self.isSlow==False):
                     for each in range(self.arrowSize):
                         keyboard.press('up') 
                         print('up')
+                
             elif(key==self.down):
                 keyboard.press('down')
                 if(self.isSlow==False):
                     for each in range(self.arrowSize):
                         keyboard.press('down') 
                         print('down')
+                
             elif(key==self.right):
                 keyboard.press('right')
                 if(self.isSlow==False):
                     for each in range(self.arrowSize):
                         keyboard.press('right') 
                         print('right')
+                
             #$블록지정
             elif(key==self.shiftleft):
-                keyboard.press('shift+left')
                 if(self.isSlow==False):
                     for each in range(self.arrowSize):
-                        keyboard.press('shift+left') 
-                        print('shiftleft')
-                print('shiftleft')
+                        if not self.shift:
+                            keyboard.press('shift')
+                        keyboard.press('left')
+                        keyboard.release('left')
+                        if not self.shift:
+                            keyboard.release('shift') 
+                else:
+                    if not self.shift:
+                        keyboard.press('shift')
+                    keyboard.press('left')
+                    keyboard.release('left')
+                    if not self.shift:
+                        keyboard.release('shift')  
+                print('shift left')
+                
             elif(key==self.shiftright):
-                # keyboard.press('shift')
-                keyboard.press('shift+right')
                 if(self.isSlow==False):
                     for each in range(self.arrowSize):
-                        keyboard.press('shift+right') 
-                        print('shifright')
-                print('shiftright')
+                        if not self.shift:
+                            keyboard.press('shift')
+                        keyboard.press('right')
+                        keyboard.release('right')
+                        if not self.shift:
+                            keyboard.release('shift') 
+                else:
+                    if not self.shift:
+                        keyboard.press('shift')
+                    keyboard.press('right')
+                    keyboard.release('right')
+                    if not self.shift:
+                        keyboard.release('shift')
+                print('shift right')
+                
             elif(key==self.shiftup):
-                keyboard.press('shift+up')
                 if(self.isSlow==False):
                     for each in range(self.arrowSize):
-                        keyboard.press('shift+up') 
-                        print('shiftup')
-                print('shiftup')
+                        if not self.shift:
+                            keyboard.press('shift')
+                        keyboard.press('up')
+                        keyboard.release('up')
+                        if not self.shift:
+                            keyboard.release('shift') 
+                else:
+                    if not self.shift:
+                        keyboard.press('shift')
+                    keyboard.press('up')
+                    keyboard.release('up')
+                    if not self.shift:
+                        keyboard.release('shift')
+                print('shift up')
+                
             elif(key==self.shiftdown):
-                keyboard.press('shift+down')
-                # keyboard.press('down')
                 if(self.isSlow==False):
                     for each in range(self.arrowSize):
-                        keyboard.press('shift+down') 
-                        print('shiftdown')
-                print('shiftdown')
-        
-
-
-
-
+                        if not self.shift:
+                            keyboard.press('shift')
+                        keyboard.press('down')
+                        keyboard.release('down')
+                        if not self.shift:
+                            keyboard.release('shift') 
+                else:
+                    if not self.shift:
+                        keyboard.press('shift')
+                    keyboard.press('down')
+                    keyboard.release('down')
+                    if not self.shift:
+                        keyboard.release('shift')
+                print('shift down')
+                
 
     #키 릴리즈
     def alter_keys_release(self,key):
@@ -271,25 +350,26 @@ class Shortcut:
         #조합키
         if(key=='space'): 
             keyboard.release('space')
+            return
         if(key=='shift' or key=='right shift'):
-            keyboard.release('shift')
-            keyboard.release('right shift')
             self.shift = False
+            keyboard.release('shift')
+            return
         if(key=='ctrl' or key=='right ctrl'):
-            keyboard.release('ctrl')
             self.ctrl = False
+            keyboard.release('ctrl')
+            return
         if(key=='alt'):
-            keyboard.release('alt')
             self.alt = False
+            keyboard.release('alt')
+            return
         #모드 아니면 해당 키 릴리즈 후 종료
         if(self.mode_flag == False):
-            keyboard.release(key) 
-            return
+            keyboard.release(key)
         #가속 여부 : 감속
         if(key==self.mouseSlow):
             self.isSlow = True
             self.speed = self.speedSlow
-            return
         #마우스 버튼
         if(self.isMouse):
             if(key==self.mouseLeft):
@@ -301,8 +381,6 @@ class Shortcut:
         #매핑된 키면
         elif(key in self.cmds):
             keyboard.release(key)
-
-
 
     #모드 변경 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ   s
     def changeMode(self):
@@ -321,8 +399,6 @@ class Shortcut:
             # shortcut = Shortcut()
             keyboard.wait()
 
-       
-    
     def __del__(self):
         keyboard.unhook_all()
         keyboard.unhook_all_hotkeys()
